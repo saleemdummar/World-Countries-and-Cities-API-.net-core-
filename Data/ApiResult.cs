@@ -6,8 +6,14 @@ namespace worldCitiesServer.Data
 {
     public class ApiResult<T>
     {
-        private ApiResult(List<T> data, int count, int pageIndex, int pageSize, string? sortColumn, string? sortOrder, string? filterColumn,
-string? filterQuery)
+        private ApiResult(List<T> data,
+            int count,
+            int pageIndex,
+            int pageSize,
+            string? sortColumn,
+            string? sortOrder,
+            string? filterColumn = null,
+            string? filterQuery = null)
         {
             Data = data;
             PageIndex = pageIndex;
@@ -19,15 +25,19 @@ string? filterQuery)
             FilterColumn = filterColumn;
             FilterQuery = filterQuery;
         }
-        public static async Task<ApiResult<T>> CreateAsync(IQueryable<T> source, int pageIndex,
-            int pageSize, string? sortColumn = null, string? sortOrder = null, string? filterColumn = null,
+        public static async Task<ApiResult<T>> CreateAsync(IQueryable<T> source,
+            int pageIndex,
+            int pageSize,
+            string? sortColumn = null,
+            string? sortOrder = null,
+            string? filterColumn = null,
             string? filterQuery = null)
         {
             // adding the filtering functionality 
             if (!string.IsNullOrEmpty(filterColumn) && !string.IsNullOrEmpty(filterQuery)
              && IsValidProperty(filterColumn))
             {
-              source = source.Where(string.Format("{0}.StartWith(@0)"),filterColumn,filterQuery);
+              source = source.Where(string.Format("{0}.StartsWith(@0)",filterColumn),filterQuery);
             }
             // getting the total count
             var count = await source.CountAsync();
@@ -73,9 +83,9 @@ string? filterQuery)
         public int PageSize { get; private set; }
         public int TotalCount { get; private set; }
         public int TotalPages { get; private set; }
-        public string? SortColumn { get;  set; }
+        public string? SortColumn { get; set; }
         public string? SortOrder { get;  set; }
-        public string? FilterColumn { get;  set; }
+        public string? FilterColumn { get; set; }
         public string? FilterQuery { get;set; }
         public bool HasPreviousPage { get { return (PageIndex > 0); } }
         public bool HasNextPage { get { return ((PageIndex + 1) < TotalPages); } }

@@ -1,12 +1,13 @@
 ﻿using System.Linq.Dynamic.Core;
-using Microsoft.EntityFrameworkCore; 
+using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
 namespace worldCitiesServer.Data
 {
     public class ApiResult<T>
     {
-        private ApiResult(List<T> data, int count, int pageIndex, int pageSize, string? sortColumn, string? sortOrder)
+        private ApiResult(List<T> data, int count, int pageIndex, int pageSize, string? sortColumn, string? sortOrder, string? filterColumn,
+string? filterQuery)
         {
             Data = data;
             PageIndex = pageIndex;
@@ -15,10 +16,20 @@ namespace worldCitiesServer.Data
             TotalPages = (int)Math.Ceiling(count / (double)pageSize);
             SortColumn = sortColumn;
             SortOrder = sortOrder;
+            FilterColumn = filterColumn;
+            FilterQuery = filterQuery;
         }
         public static async Task<ApiResult<T>> CreateAsync(IQueryable<T> source, int pageIndex,
-            int pageSize, string? sortColumn = null, string? sortOrder = null)
+            int pageSize, string? sortColumn = null, string? sortOrder = null, string? filterColumn = null,
+            string? filterQuery = null)
         {
+            // adding the filtering functionality 
+            if (!string.IsNullOrEmpty(filterColumn) && !string.IsNullOrEmpty(filterQuery)
+             && IsValidProperty(filterColumn))
+            {
+              source = source.Where(string.Format("{0}.StartWith(@0)"),filterColumn,filterQuery);
+            }
+            // getting the total count
             var count = await source.CountAsync();
             if (!string.IsNullOrEmpty(sortColumn)
              && IsValidProperty(sortColumn))
@@ -27,7 +38,7 @@ namespace worldCitiesServer.Data
                 && sortOrder.ToUpper() == "ASC"
                 ? "ASC"
                 : "DESC";
-                source = source.OrderBy(string.Format("{0} {1}",sortColumn,sortOrder));
+                source = source.OrderBy(string.Format("{0} {1}", sortColumn, sortOrder));
             }
             source = source
             .Skip(pageIndex * pageSize)
@@ -39,7 +50,9 @@ namespace worldCitiesServer.Data
              pageIndex,
              pageSize,
              sortColumn,
-             sortOrder);
+             sortOrder,
+             filterColumn,
+             filterQuery);
 
         }
 
@@ -60,8 +73,10 @@ namespace worldCitiesServer.Data
         public int PageSize { get; private set; }
         public int TotalCount { get; private set; }
         public int TotalPages { get; private set; }
-        public string? SortColumn { get; private set; }
-        public string? SortOrder { get; private set; }
+        public string? SortColumn { get;  set; }
+        public string? SortOrder { get;  set; }
+        public string? FilterColumn { get;  set; }
+        public string? FilterQuery { get;set; }
         public bool HasPreviousPage { get { return (PageIndex > 0); } }
         public bool HasNextPage { get { return ((PageIndex + 1) < TotalPages); } }
     }

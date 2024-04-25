@@ -1,6 +1,7 @@
 ﻿using System.Linq.Dynamic.Core;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
+using EFCore.BulkExtensions;
 
 namespace worldCitiesServer.Data
 {
@@ -37,7 +38,7 @@ namespace worldCitiesServer.Data
             if (!string.IsNullOrEmpty(filterColumn) && !string.IsNullOrEmpty(filterQuery)
              && IsValidProperty(filterColumn))
             {
-              source = source.Where(string.Format("{0}.StartsWith(@0)",filterColumn),filterQuery);
+                source = source.Where(string.Format("{0}.StartsWith(@0)", filterColumn), filterQuery);
             }
             // getting the total count
             var count = await source.CountAsync();
@@ -53,6 +54,13 @@ namespace worldCitiesServer.Data
             source = source
             .Skip(pageIndex * pageSize)
             .Take(pageSize);
+
+            // install the package EFCore.BulkExtensions
+             #if DEBUG
+            // retrieve the SQL query (for debug purposes)
+            var sql = source.ToParametrizedSql();
+            // TODO: do something with the sql string
+             #endif
             var data = await source.ToListAsync();
             return new ApiResult<T>(
              data,
@@ -84,9 +92,9 @@ namespace worldCitiesServer.Data
         public int TotalCount { get; private set; }
         public int TotalPages { get; private set; }
         public string? SortColumn { get; set; }
-        public string? SortOrder { get;  set; }
+        public string? SortOrder { get; set; }
         public string? FilterColumn { get; set; }
-        public string? FilterQuery { get;set; }
+        public string? FilterQuery { get; set; }
         public bool HasPreviousPage { get { return (PageIndex > 0); } }
         public bool HasNextPage { get { return ((PageIndex + 1) < TotalPages); } }
     }
